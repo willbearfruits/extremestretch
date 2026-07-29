@@ -638,6 +638,15 @@ function draw(elapsed, progress, tick) {
 
 const $ = (id) => document.getElementById(id);
 
+/** Calendar date in the viewer's own timezone. The epoch is midnight in
+    Jerusalem, which is 21:00Z the day before — printing that as UTC would put
+    the wrong date on a birthday. */
+function localDate(ms) {
+  const d = new Date(ms);
+  const pad = (n) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
 function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
 
 /** Bytes it would take, if anyone were foolish enough to actually record it. */
@@ -679,8 +688,7 @@ function updatePanel() {
   $('bar').textContent = '▓'.repeat(filled) + '░'.repeat(width - filled);
 
   $('span').textContent =
-    new Date(EPOCH).toISOString().slice(0, 10) + '  →  ' +
-    new Date(EPOCH + TOTAL_SECONDS * 1000).toISOString().slice(0, 10);
+    localDate(EPOCH) + '  →  ' + localDate(EPOCH + TOTAL_SECONDS * 1000);
 
   if (sourceDuration > 0) {
     const inSong = Math.min(sourceDuration, Math.max(0, elapsed / stretch));
