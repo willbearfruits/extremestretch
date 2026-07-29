@@ -58,6 +58,10 @@ struct StretchParams
 /**
     Paul's Extreme Sound Stretch, plus four sibling algorithms.
 
+    The algorithm is Nasca Octavian Paul's — author of Paul's Extreme Sound
+    Stretch and ZynAddSubFX. This is an independent reimplementation written
+    from the method, not a port of his code. The invention is his.
+
     The classic: take a long window of input, window it, FFT, throw the phases
     away and replace them with noise, IFFT, window again, and overlap-add at
     50%. The output hop is windowSize/2; the *input* hop is (windowSize/2) /

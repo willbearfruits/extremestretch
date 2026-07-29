@@ -4,6 +4,22 @@ Paul's Extreme Sound Stretch, rebuilt as a JUCE 8 plugin, standalone app and
 command-line renderer — with four sibling algorithms and a destructive half the
 original never had.
 
+## Credit where it is owed
+
+The algorithm is **Nasca Octavian Paul's**. He wrote *Paul's Extreme Sound
+Stretch* (and ZynAddSubFX), and the idea at the heart of this — throw the phases
+away, replace them with noise, overlap enormous windows — is entirely his. It is
+one of those rare techniques that is both trivially simple to state and sounds
+like nothing else. Everything here exists because he thought of it first.
+
+This is an **independent reimplementation written from the algorithm**, not a
+port or a translation of his code: the DSP was built from the method and the
+window maths, and none of his source is included or derived from. Credit for the
+invention is his; any bugs in this version are ours.
+
+If you want the original, look up *Paul's Extreme Sound Stretch* and his
+`paulstretch_python` reference scripts.
+
 | target | what it is |
 | --- | --- |
 | `Extreme Stretch.vst3` | VST3 plugin (file player + live-input smearer) |

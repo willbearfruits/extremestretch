@@ -2,14 +2,20 @@
 
 Guidance for Claude Code working in `~/Projects/extremestrertch/`.
 
-**The directory name is a typo** — `extremestrertch`, not `extremestretch`. It is
-the real path. Do not "fix" it or create a correctly-spelled sibling.
+**Renamed 2026-07-29:** this was `extremestrertch` (typo) and is now
+`extremestretch`, both locally and on GitHub. The old repo URL 301-redirects.
+Any older note telling you the typo is canonical is out of date.
 
 ## What this is
 
 Paul's Extreme Sound Stretch as a JUCE 8 plugin + standalone + CLI renderer,
 extended with destructive spectral controls. See `README.md` for the algorithm
 and the control list.
+
+**The algorithm is Nasca Octavian Paul's.** This is an independent
+reimplementation written from the method, not a port of his code. Keep the
+credit in `README.md`, in the `PaulStretch.h` header comment, and in the plugin
+header ("after Nasca Octavian Paul") — do not quietly drop it while refactoring.
 
 ## Layout
 

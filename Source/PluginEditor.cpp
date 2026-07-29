@@ -212,11 +212,17 @@ void ExtremeStretchEditor::paint (juce::Graphics& g)
     g.fillAll (ui::colours::bg);
 
     auto header = getLocalBounds().removeFromTop (52).reduced (16, 0);
+    auto title  = header.removeFromLeft (330);
 
     g.setColour (ui::colours::text);
     g.setFont (juce::FontOptions (22.0f).withStyle ("Bold"));
-    g.drawText ("EXTREME STRETCH", header.removeFromLeft (240),
-                juce::Justification::centredLeft);
+    g.drawText ("EXTREME STRETCH", title.removeFromTop (33),
+                juce::Justification::bottomLeft);
+
+    // The algorithm is his. Say so where people actually look.
+    g.setColour (ui::colours::dim.withAlpha (0.85f));
+    g.setFont (juce::FontOptions (9.5f));
+    g.drawText ("after Nasca Octavian Paul", title, juce::Justification::topLeft);
 
     g.setColour (ui::colours::dim);
     g.setFont (juce::FontOptions (11.0f));
