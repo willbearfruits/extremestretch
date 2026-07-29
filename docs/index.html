@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extreme Stretch — paulstretch as a JUCE plugin</title>
+<meta name="description" content="Paul's Extreme Sound Stretch rebuilt as a JUCE 8 plugin, standalone app and CLI renderer, with five algorithms and a destructive half the original never had.">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://willbearfruits.github.io/extremestretch/">
+<meta property="og:title" content="Extreme Stretch">
+<meta property="og:description" content="Paul's Extreme Sound Stretch rebuilt in JUCE — five algorithms, stretch ratios to 10¹⁵×, and a destructive half the original never had.">
+<meta property="og:image" content="https://willbearfruits.github.io/extremestretch/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+
+<style>
+  :root {
+    --bg:    #0a0b0d;
+    --panel: #131518;
+    --edge:  #262b32;
+    --text:  #d8dce2;
+    --dim:   #69707a;
+    --cold:  #31e0c0;
+    --hot:   #ff4433;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    /* Named faces first: some browsers map the generic families to a monospace
+       default, which turns the whole page into a terminal by accident. */
+    font: 15px/1.7 "Inter", "Noto Sans", "DejaVu Sans", "Segoe UI", Roboto,
+          Helvetica, Arial, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 60rem; margin: 0 auto; padding: 0 clamp(1.1rem, 4vw, 2.5rem); }
+
+  code, .mono, kbd {
+    font-family: ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a { color: var(--cold); text-decoration: none; border-bottom: 1px solid transparent; }
+  a:hover { border-bottom-color: currentColor; }
+
+  header { padding: clamp(3rem, 9vh, 6rem) 0 clamp(2rem, 5vh, 3.5rem); }
+
+  h1 {
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .after { color: var(--dim); font-size: 0.85rem; letter-spacing: 0.08em; margin: 0.4rem 0 1.8rem; }
+  .lede  { font-size: clamp(1rem, 2.2vw, 1.2rem); color: var(--text); max-width: 46rem; margin: 0 0 2rem; }
+
+  nav { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+
+  nav a {
+    border: 1px solid var(--edge);
+    border-radius: 3px;
+    padding: 0.55rem 1.05rem;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  nav a:hover { border-color: var(--cold); color: var(--cold); }
+
+  section { padding: clamp(2.5rem, 7vh, 4.5rem) 0; border-top: 1px solid var(--edge); }
+
+  h2 {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--dim);
+    margin: 0 0 1.6rem;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 2.4rem 0 0.5rem;
+  }
+
+  h3:first-of-type { margin-top: 1.4rem; }
+
+  p { max-width: 46rem; }
+  .note { color: var(--dim); font-size: 0.9rem; }
+
+  /* --- players ------------------------------------------------------- */
+  .player {
+    display: grid;
+    grid-template-columns: 2.6rem 7.5rem 1fr;
+    align-items: center;
+    gap: 0 0.9rem;
+    padding: 0.55rem 0.8rem 0.55rem 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+  }
+
+  .player:hover  { background: var(--panel); }
+  .player.on     { background: var(--panel); border-color: var(--edge); }
+
+  .player button {
+    width: 2.1rem; height: 2.1rem;
+    border: 1px solid var(--edge);
+    border-radius: 50%;
+    background: none;
+    color: var(--cold);
+    cursor: pointer;
+    font-size: 0.7rem;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    padding: 0;
+  }
+
+  .player button:hover { border-color: var(--cold); }
+  .player.on button    { background: var(--cold); color: #06231e; border-color: var(--cold); }
+
+  .player .name { font-weight: 600; font-size: 0.95rem; }
+  .player .desc { color: var(--dim); font-size: 0.88rem; }
+
+  .player .bar {
+    grid-column: 2 / -1;
+    height: 2px;
+    background: var(--edge);
+    margin-top: 0.45rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .player .bar i { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--cold); }
+  .player.hot button      { color: var(--hot); }
+  .player.hot.on button   { background: var(--hot); color: #2a0703; border-color: var(--hot); }
+  .player.hot .bar i      { background: var(--hot); }
+
+  /* --- misc ---------------------------------------------------------- */
+  figure { margin: 1.6rem 0 0; }
+
+  figure img {
+    width: 100%;
+    display: block;
+    border: 1px solid var(--edge);
+    border-radius: 4px;
+  }
+
+  figcaption { color: var(--dim); font-size: 0.85rem; margin-top: 0.6rem; }
+
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 0.55rem 0.9rem 0.55rem 0; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  th { color: var(--dim); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; }
+  td:first-child { white-space: nowrap; font-weight: 600; }
+
+  pre {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 4px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    font-size: 0.86rem;
+    line-height: 1.6;
+  }
+
+  pre code { color: var(--text); }
+  .cmt { color: var(--dim); }
+
+  blockquote {
+    margin: 1.4rem 0;
+    padding-left: 1.1rem;
+    border-left: 2px solid var(--hot);
+    color: var(--text);
+  }
+
+  footer { padding: 3rem 0 5rem; border-top: 1px solid var(--edge); color: var(--dim); font-size: 0.88rem; }
+
+  @media (max-width: 640px) {
+    .player { grid-template-columns: 2.6rem 1fr; }
+    .player .desc { grid-column: 2; }
+    .player .bar  { grid-column: 1 / -1; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header>
+  <h1>Extreme Stretch</h1>
+  <p class="after mono">after Nasca Octavian Paul</p>
+
+  <p class="lede">
+    Paul's Extreme Sound Stretch, rebuilt as a JUCE 8 plugin, standalone app and
+    command-line renderer — with five algorithms, ratios up to 10<sup>15</sup>×,
+    and a destructive half the original never had.
+  </p>
+
+  <nav>
+    <a href="https://github.com/willbearfruits/extremestretch">Source on GitHub</a>
+    <a href="#hear">Hear it</a>
+    <a href="#build">Build it</a>
+    <a href="https://willbearfruits.github.io/many-happy-returns/">A 42-year piece made with it</a>
+  </nav>
+</header>
+
+<section id="hear">
+  <h2>Hear it</h2>
+
+  <p>
+    Every clip below is the <em>same six seconds</em> of source, so the only thing
+    that differs is what the engine did to it. Start here:
+  </p>
+
+  <div class="player" data-src="audio/source.ogg" data-name="the source"
+       data-desc="six seconds, unstretched"></div>
+
+  <h3>How far you can push it</h3>
+  <p class="note">
+    Smooth algorithm throughout. Listen to it stop being a stretch and become a place.
+  </p>
+
+  <div class="player" data-src="audio/ladder-2x.ogg"    data-name="2×"    data-desc="still recognisably the song, just slurred"></div>
+  <div class="player" data-src="audio/algo-smooth.ogg"  data-name="20×"   data-desc="the words are gone; the harmony is still moving"></div>
+  <div class="player" data-src="audio/ladder-200x.ogg"  data-name="200×"  data-desc="one chord, breathing"></div>
+  <div class="player" data-src="audio/ladder-2000x.ogg" data-name="2000×" data-desc="a single moment, held open"></div>
+
+  <h3>The five algorithms</h3>
+  <p class="note">All at 20×, same window. Only the resynthesis differs.</p>
+
+  <div class="player" data-src="audio/algo-smooth.ogg"  data-name="Smooth"  data-desc="paulstretch proper — random phase. A cloud."></div>
+  <div class="player" data-src="audio/algo-onset.ogg"   data-name="Onset"   data-desc="attacks in the source are re-articulated with their own phases, so the hits survive"></div>
+  <div class="player" data-src="audio/algo-vocoder.ogg" data-name="Vocoder" data-desc="phase-coherent — tape slowed down rather than a cloud"></div>
+  <div class="player" data-src="audio/algo-grain.ogg"   data-name="Grain"   data-desc="no FFT at all: jittered grains in the time domain"></div>
+  <div class="player" data-src="audio/algo-hold.ogg"    data-name="Hold"    data-desc="magnitudes averaged over time. Glassier, and it lags"></div>
+
+  <h3>The destructive half</h3>
+  <p class="note">This is the part that isn't paulstretch.</p>
+
+  <div class="player hot" data-src="audio/dest-rot.ogg"      data-name="Rot"      data-desc="bins are killed and stay dead — forty seconds of a drone eroding to whatever survives"></div>
+  <div class="player hot" data-src="audio/dest-blur.ogg"     data-name="Blur"     data-desc="magnitudes smeared across neighbouring bins, constant in octaves"></div>
+  <div class="player hot" data-src="audio/dest-scramble.ogg" data-name="Scramble" data-desc="bins displaced locally, identically in both channels so the image holds"></div>
+
+  <p class="note" style="margin-top:2rem">
+    Source: <a href="https://freemusicarchive.org/music/Monk_Turner__Fascinoma/The_New_Birthday_Song_Contest/Its_Your_Birthday_1839/">“It’s Your Birthday!”</a>
+    by Monk Turner + Fascinoma, <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>,
+    time-stretched. One global trim was applied across all clips so nothing clips —
+    the level differences you hear between them are real.
+  </p>
+</section>
+
+<section id="plugin">
+  <h2>The plugin</h2>
+
+  <figure>
+    <img src="img/plugin.png" alt="The Extreme Stretch plugin: waveform, spectrum, and two rows of knobs on a dark interface.">
+    <figcaption>
+      Standalone build, mid-playback. The teal row is paulstretch proper; the row
+      below it is the destruction.
+    </figcaption>
+  </figure>
+
+  <figure>
+    <img src="img/plugin-grain.png" alt="The same plugin in Grain mode, with the spectral controls greyed out and SHAPE renamed to SPRAY.">
+    <figcaption>
+      Grain mode. <strong>SHAPE</strong> has renamed itself <strong>SPRAY</strong>, and
+      the five spectral controls have greyed out — grain works in the time domain,
+      so blur, rot, scramble and the cuts genuinely do nothing. The interface
+      would rather admit that than lie to you.
+    </figcaption>
+  </figure>
+
+  <p>
+    Ships as <strong>VST3</strong>, a <strong>standalone app</strong>, and
+    <strong>extremestretch-render</strong>, a headless CLI — every clip on this
+    page was made with the CLI. There is also a self-test binary that asserts 97
+    things about the DSP and has to print <code>ALL PASS</code>.
+  </p>
+</section>
+
+<section id="how">
+  <h2>How it works</h2>
+
+  <p>
+    Take a long window of input, window it, FFT, <strong>throw the phases away</strong>
+    and replace them with noise, IFFT, window again, overlap-add at 50%. The output
+    hop is <code>windowSize/2</code>; the <em>input</em> hop is
+    <code>(windowSize/2) / stretch</code>, and that is the only place the stretch
+    ratio appears anywhere in the code. Nothing is interpolated and nothing is
+    time-warped — the frames simply overlap more.
+  </p>
+
+  <h3>Why the window is not a Hann</h3>
+
+  <p>
+    This is the detail that catches people. Because the phases are random,
+    overlapping frames add <em>incoherently</em> — in power, not in amplitude. So
+    the condition the window must satisfy is <code>sum(w²) ≈ constant</code>,
+    <strong>not</strong> the usual COLA condition.
+  </p>
+
+  <blockquote>
+    A Hann window applied twice at 50% overlap swings 6 dB and tremolos audibly.
+    Paul's window, <code>sqrt(1 − |x|^2.5)</code>, ripples 2.16 dB in power.
+  </blockquote>
+
+  <p>
+    Its <code>mean(w²)</code> of 0.714 times the mean overlap sum of 1.429 comes to
+    1.02 — which is why paulstretch is unity-gain with no normalisation anywhere in
+    the signal path. The self-test asserts all three numbers, and a real render
+    measures <strong>+0.05 dB</strong> against its input.
+  </p>
+
+  <p>
+    There are actually three windows, because the algorithms add differently:
+    Paul's for random phase, <code>sqrt(Hann)</code> for the coherent vocoder
+    (which is a <em>perfect</em> reconstructor at ratio 1), and plain Hann for
+    grains, which are windowed only once.
+  </p>
+
+  <h3>Why it never runs out of memory</h3>
+
+  <p>
+    A window can be 262144 points, so one FFT is tens of milliseconds — far too
+    slow for an audio callback. A render thread keeps a FIFO topped up and
+    <code>processBlock</code> only ever memcpys out of it. Playback therefore
+    starts instantly and stays memory-bounded no matter how absurd the ratio: a
+    60-second file at 10<sup>15</sup>× is 1.9 billion years of audio that is never
+    materialised anywhere.
+  </p>
+</section>
+
+<section id="controls">
+  <h2>Controls</h2>
+
+  <table>
+    <tr><th>Paulstretch</th><th></th></tr>
+    <tr><td>STRETCH</td><td>1× – 10<sup>15</sup>×, on a biased-log knob so the musical range keeps most of the travel. Or type a target length — “2h”, “1000 years”, “9.5 billion years” — and the ratio follows.</td></tr>
+    <tr><td>WINDOW</td><td>5 ms – 5 s, snapped to a power of two. Short is grainy, long is glassy.</td></tr>
+    <tr><td>SHAPE</td><td>One knob wearing five hats; it renames itself per algorithm — SENSITIVITY, COHERENCE, SPRAY, HOLD.</td></tr>
+    <tr><td>FREEZE</td><td>Pins the read head. The drone hangs on one moment forever.</td></tr>
+    <tr><td>WIDTH</td><td>0 = channels share a phase per bin, 1 = fully decorrelated. This is where the huge paulstretch stereo comes from.</td></tr>
+  </table>
+
+  <table>
+    <tr><th>Destruction</th><th></th></tr>
+    <tr><td>PITCH</td><td>±24 semitones by resampling the magnitude spectrum. Artefact-free, because there are no phases left to smear.</td></tr>
+    <tr><td>BLUR</td><td>Smears magnitudes across neighbouring bins. The radius grows with frequency, so the smear is constant in octaves rather than in hertz, and the energy is put back afterwards.</td></tr>
+    <tr><td>ROT</td><td>Kills bins, and the damage <em>persists between frames</em>. At 1.0 nothing heals and the drone collapses to whatever survives; below that, damage and healing find an equilibrium. Back it off and it grows back.</td></tr>
+    <tr><td>SCRAMBLE</td><td>Displaces bins locally, with the same swap map on every channel so the stereo image survives.</td></tr>
+    <tr><td>LOW / HIGH CUT</td><td>24 dB/oct gating done in the magnitude domain.</td></tr>
+  </table>
+</section>
+
+<section id="build">
+  <h2>Build it</h2>
+
+  <p>Needs JUCE 8 and CMake. No other dependencies.</p>
+
+<pre><code>git clone https://github.com/willbearfruits/extremestretch
+cd extremestretch
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+
+<span class="cmt"># must print ALL PASS</span>
+./build/ExtremeStretchSelfTest_artefacts/Release/extremestretch-selftest</code></pre>
+
+  <p class="note">
+    The VST3 is copied into <code>~/.vst3/</code> after a successful build; pass
+    <code>-DES_COPY_PLUGIN=OFF</code> to keep everything inside <code>build/</code>.
+  </p>
+
+  <h3>From the command line</h3>
+
+<pre><code>extremestretch-render in.wav out.wav --stretch 50 --window 0.5
+extremestretch-render in.wav out.wav --length "2h"          <span class="cmt"># ratio worked out for you</span>
+extremestretch-render in.wav out.wav --algorithm vocoder --shape 0.7
+extremestretch-render in.wav out.wav --stretch 1e14 --max-seconds 60</code></pre>
+
+  <p class="note">
+    It prints the full output length before writing anything, so you can see what
+    you are asking for. It will happily tell you the answer is 9.5 billion years.
+  </p>
+</section>
+
+<section id="credit">
+  <h2>Credit</h2>
+
+  <p>
+    The algorithm is <strong>Nasca Octavian Paul's</strong>. He wrote
+    <em>Paul's Extreme Sound Stretch</em> (and ZynAddSubFX), and the idea at the
+    heart of this — throw the phases away, replace them with noise, overlap
+    enormous windows — is entirely his. It is one of those rare techniques that is
+    trivial to state and sounds like nothing else.
+  </p>
+
+  <p>
+    This is an <strong>independent reimplementation written from the algorithm</strong>,
+    not a port or a translation of his code. Credit for the invention is his; any
+    bugs in this version are ours.
+  </p>
+</section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <a href="https://github.com/willbearfruits/extremestretch">github.com/willbearfruits/extremestretch</a>
+    &nbsp;·&nbsp;
+    <a href="https://willbearfruits.github.io/many-happy-returns/">many happy returns</a>
+  </div>
+</footer>
+
+<script>
+'use strict';
+
+// One player at a time; each row builds its own transport out of the markup.
+let current = null;
+
+document.querySelectorAll('.player').forEach((row) => {
+  const audio = new Audio(row.dataset.src);
+  audio.preload = 'none';
+
+  row.innerHTML =
+    '<button type="button" aria-label="play ' + row.dataset.name + '">▶</button>' +
+    '<span class="name">' + row.dataset.name + '</span>' +
+    '<span class="desc">' + row.dataset.desc + '</span>' +
+    '<span class="bar"><i></i></span>';
+
+  const button = row.querySelector('button');
+  const fill   = row.querySelector('.bar i');
+
+  function stop() {
+    audio.pause();
+    row.classList.remove('on');
+    button.textContent = '▶';
+  }
+
+  button.addEventListener('click', async () => {
+    if (!audio.paused) { stop(); current = null; return; }
+
+    if (current && current !== stop) current();
+    current = stop;
+
+    row.classList.add('on');
+    button.textContent = '■';
+
+    // play() can reject — don't leave the button claiming to be playing.
+    try {
+      await audio.play();
+    } catch (err) {
+      stop();
+      current = null;
+    }
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    if (audio.duration)
+      fill.style.width = (audio.currentTime / audio.duration * 100) + '%';
+  });
+
+  audio.addEventListener('ended', () => {
+    fill.style.width = '0';
+    stop();
+    current = null;
+  });
+});
+</script>
+</body>
+</html>

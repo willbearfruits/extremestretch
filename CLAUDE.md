@@ -60,6 +60,14 @@ report lengths inflated by exactly 1.5×.
 
 ## Things that will bite you
 
+- **Moving or renaming this directory silently kills the build tree.**
+  `build/CMakeCache.txt` stores absolute paths; after the 2026-07-29 rename it
+  still pointed at `extremestrertch/`, so `cmake --build build` did nothing,
+  reported no error, and left a stale binary behind — which then passed the
+  self-test and showed an old UI. If a change does not appear to take effect,
+  check `stat` on the binary before you debug the code. The fix is
+  `rm -rf build && cmake -B build -DCMAKE_BUILD_TYPE=Release`.
+
 - **There are three windows and they are not interchangeable.** Which one a
   frame uses depends on how frames add:
   `windowPaul` for random phase (`sum(w²)` flat), `windowSqrtHann` for the

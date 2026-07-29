@@ -5,3 +5,6 @@ compile_commands.json
 *.wav
 !Tests/fixtures/*.wav
 .DS_Store
+
+# the demo page's audio is generated, but committed so Pages can serve it
+!docs/audio/*.ogg
